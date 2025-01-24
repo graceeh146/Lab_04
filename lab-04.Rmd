@@ -1,5 +1,5 @@
 ---
-title: "Lab 04 - La Quinta is Spanish for next to Denny's, Pt. 1"
+title: "Lab 04 - Visualizing spatial data"
 author: "Enhui Wang"
 date: "2025.01.26"
 output: github_document
@@ -17,35 +17,158 @@ states <- read_csv("data/states.csv")
 ```
 
 ### Exercise 1
+The dataset has 1643 rows, representing one restaurant. It has 6 variables.
 
-Remove this text, and add your answer for Exercise 1 here.
-Add code chunks as needed.
-Don't forget to label your code chunk.
-Do not use spaces in code chunk labels.
+```{r}
+#rows
+nrow(dennys)
+#variables
+ncol(dennys)
+```
+
 
 ### Exercise 2
+The dataset has 909 rows, representing one motel. It has 6 variables.
 
-Remove this text, and add your answer for Exercise 2 here.
-Add code chunks as needed.
-Don't forget to label your code chunk.
-Do not use spaces in code chunk labels.
+```{r}
+#rows
+nrow(laquinta)
+#variables
+ncol(laquinta)
+```
 
 ### Exercise 3
-
+La Quinta has some locations outside the US, including countries such as New Zealand, Turkey, the United Arab Emirates, Chile, Colombia, and Ecuador. Denny's does not have any locations outside of the US. 
 ...
 
 ### Exercise 4
-
-...
+I can filter for states where states do not include states in the US.
 
 ### Exercise 5
+There are not any Denny's locations outside the US.
+```{r}
+#filter for 'state' that are not in states_abbreviation
+dennys %>%
+  filter(!(state %in% states$abbreviation))
+```
 
-...
 
 ### Exercise 6
+```{r}
+#add a "United States" variable to the dataset
+dn <- dennys %>%
+  mutate(country = "United States")
+```
+### Exercise 7
+```{r}
+#filter for 'state' that are not in states_abbreviation
+laquinta %>%
+  filter(!(state %in% states$abbreviation))
+```
+###Exercise8
+```{r}
+#add a "country" variable to the dataset
+lp <- laquinta %>%
+  mutate(country = case_when(
+    state %in% state.abb ~ "United States",
+    state %in% c("ON", "BC") ~ "Canada",
+    state == "ANT" ~ "Colombia",
+    address == "Carretera Panamericana Sur KM 12" ~ "Mexico",
+    address == "Av. Tulum Mza. 14 S.M. 4 Lote 2" ~ "Mexico",
+    address == "Ejercito Nacional 8211" ~ "Mexico",
+    address == "Blvd. Aeropuerto 4001" ~ "Mexico",
+    address == "Carrera 38 # 26-13 Avenida las Palmas con Loma de San Julian El Poblado" ~ "Colombia",
+    address == "AV. PINO SUAREZ No. 1001" ~ "Mexico",
+    address == "Av. Fidel Velazquez #3000 Col. Central" ~ "Mexico",
+    address == "63 King Street East" ~ "Canada",
+    address == "Calle Las Torres-1 Colonia Reforma" ~ "Mexico",
+    address == "Blvd. Audi N. 3 Ciudad Modelo" ~ "Mexico",
+     address == "Ave. Zeta del Cochero No 407" ~ "Mexico",
+    address == "Av. Benito Juarez 1230 B (Carretera 57) Col. Valle Dorado Zona Hotelera" ~ "Mexico",
+    address == "Blvd. Fuerza Armadas" ~ "Honduras", 
+    address == "8640 Alexandra Rd" ~ "Canada",     
+    TRUE ~ "Unknown"                               
+  )) 
 
-...
+lp <- lp %>%
+  filter(country == "United States")
+```
 
- 
-Add exercise headings as needed.
+###Exercise 9
+CA has the most Denny's locations, and DE has the fewest. TX has the most, and AG/ANT/BC/CH/FM/ME/ON/QR/SL/VEANT has the most. Honestly, it does not surprise me because I have little background information about these restaurants. 
+```{r}
+#summarize the number of Denny's location 
+dennys_summary <- dennys %>%
+  group_by(state) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
 
+print (dennys_summary)
+#summarize the number of La Quinta's location 
+laquinta_summary <- laquinta %>%
+  group_by(state) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+print (laquinta_summary)
+```
+```{r}
+#calculate which states have the most Denny’s locations per thousand square miles.
+dn %>%
+  count(state) %>%
+  inner_join(states, by = c("state" = "abbreviation"))
+#calculate which states have the most La Quinta’s locations per thousand square miles.
+lp %>%
+  count(state) %>%
+  inner_join(states, by = c("state" = "abbreviation"))
+```
+###Exercise 10
+Alaska has the most Denny's and La Quinta's locations per thousand square miles
+
+```{r}
+#put two datasets together into a single data frame.
+dn <- dn %>%
+  mutate(establishment = "Denny's")
+lp <- lp %>%
+  mutate(establishment = "La Quinta")
+#bind them with the same columns
+dn_lp <- bind_rows(dn, lp)
+#plot locations of the two establishments using a scatter plot.
+ggplot(dn_lp, mapping = aes(
+  x = longitude,
+  y = latitude,
+  color = establishment
+)) +
+  geom_point()
+```
+###Exercise 11
+I  think the joke partially holds.  Because not all points overlap with each other, and most points are distributed
+sparsely.
+```{r}
+#filter the data for observations in North Carolina only
+NC<- dn_lp %>%
+  filter(state == "NC")
+#recreate the plot
+ggplot(NC, mapping = aes(
+  x = longitude,
+  y = latitude,
+  color = establishment,
+)) +
+  geom_point(alpha=0.8)
+
+```
+###Exercise 12
+I  think the joke holds. Because almost all points overlap with each other in similar areas for Denny's and La Quinta. 
+```{r}
+#filter the data for observations in Texas only
+TX<- dn_lp %>%
+  filter(state == "TX")
+#recreate the plot
+ggplot(TX, mapping = aes(
+  x = longitude,
+  y = latitude,
+  color = establishment,
+)) +
+  geom_point(alpha=0.8)
+
+```
